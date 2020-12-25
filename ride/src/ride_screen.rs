@@ -292,7 +292,7 @@ fn add_character_definition(&mut self) {
 self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
 //std::thread::sleep(std::time::Duration::from_secs(1));
 
-let character=dialog::Input::new("Enter the desired character to be defined.").title("Add character definition").show().unwrap();
+let character=dialog::Input::new("Enter the desired character to be defined for character rendering.").title("Add character definition").show().unwrap();
 let definition=dialog::Input::new("Enter the definition for the entered character.").title("Add character definition").show().unwrap();
 
 if let Some(character) = character {
@@ -317,7 +317,7 @@ fn add_string_definition(&mut self) {
 self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
 //std::thread::sleep(std::time::Duration::from_secs(1));
 
-let string=dialog::Input::new("Enter the desired character to be defined.").title("Add character definition").show().unwrap();
+let string=dialog::Input::new("Enter the desired character to be defined for string rendering.").title("Add character definition").show().unwrap();
 let definition=dialog::Input::new("Enter the definition for the entered character.").title("Add character definition").show().unwrap();
 
 if let Some(string) = string {
