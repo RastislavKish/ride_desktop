@@ -1,0 +1,30 @@
+[package]
+name = "ride"
+license="GPL-3.0-only"
+version = "0.1.0"
+authors = ["Rastislav Kish <rastislav.kish@protonmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+bass={path="../bass"}
+gdk="0.12.1"
+
+clipboard="0.5.0"
+derivative="2.1.1"
+dialog="0.3.0"
+lazy_static="1.4.0"
+serde={version="1.0.110", features=["derive"]}
+rmp-serde="0.14.3"
+speech-dispatcher="0.4.3"
+
+[dependencies.gtk]
+version = "0.8.1"
+features = ["v3_16"]
+
+[dependencies.gio]
+version = ""
+features = ["v2_44"]
+
