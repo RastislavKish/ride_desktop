@@ -15,7 +15,7 @@ mod resources;
 mod settings;
 mod speech;
 
-use ride_text::RideText;
+use ride_text::{RideText, SearchDirection};
 use resources::Resources;
 use screen::{KeyboardShortcutsManager, KeyboardShortcut, Key};
 use settings::Settings;
@@ -23,6 +23,7 @@ use speech::Speech;
 
 pub struct RideScreen<'a> {
 content: RideText,
+lastly_searched_phrase: String,
 keyboard_shortcuts_manager: KeyboardShortcutsManager<'a>,
 resources: Resources,
 settings: Settings,
@@ -36,6 +37,7 @@ pub fn new(file_path: &str, ride_tx: Sender<RideThreadMessage>) -> Self {
 let resources=Resources::new();
 let speech=Speech::new("ride");
 let content=RideText::new();
+let lastly_searched_phrase="".to_string();
 let mut settings=Settings::new();
 settings.load(&(std::env::var("HOME").unwrap()+"/.config/ride/settings.dat"));
 
@@ -60,6 +62,9 @@ keyboard_shortcuts_manager.add_shortcut(false, false, false, Key::End, &Self::na
 keyboard_shortcuts_manager.add_shortcut(false, false, true, Key::Right, &Self::increase_indentation_level);
 keyboard_shortcuts_manager.add_shortcut(false, false, true, Key::Left, &Self::decrease_indentation_level);
 keyboard_shortcuts_manager.add_shortcut(true, false, false, Key::J, &Self::jump_to_line);
+keyboard_shortcuts_manager.add_shortcut(true, false, false, Key::F, &Self::find);
+keyboard_shortcuts_manager.add_shortcut(false, false, false, Key::F3, &Self::refind);
+keyboard_shortcuts_manager.add_shortcut(false, true, false, Key::F3, &Self::backward_refind);
 
 //Editing functions
 
@@ -78,7 +83,7 @@ keyboard_shortcuts_manager.add_shortcut(true, false, false, Key::V, &Self::paste
 keyboard_shortcuts_manager.add_shortcut(true, false, false, Key::R, &Self::add_character_definition);
 keyboard_shortcuts_manager.add_shortcut(true, true, false, Key::R, &Self::add_string_definition);
 
-let mut result=Self {content, keyboard_shortcuts_manager, resources, settings, speech, ride_tx};
+let mut result=Self {content, lastly_searched_phrase, keyboard_shortcuts_manager, resources, settings, speech, ride_tx};
 
 result.load_from_file(file_path);
 
@@ -199,6 +204,49 @@ dialog::Message::new("Invalid input.").title("Error").show().unwrap();
 }
 }
 self.ride_tx.send(RideThreadMessage::ShowWindow).unwrap();
+}
+
+fn find(&mut self) {
+self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
+
+let input=dialog::Input::new("Enter the phrase to search for.").title("Find").show().unwrap();
+if let Some(text)=input {
+if text=="" {
+return;
+}
+
+self.lastly_searched_phrase=text.to_string();
+};
+
+self.ride_tx.send(RideThreadMessage::ShowWindow).unwrap();
+
+self.refind();
+}
+
+fn refind(&mut self) {
+if self.lastly_searched_phrase=="" {
+self.find();
+}
+
+if self.content.find(&self.lastly_searched_phrase, SearchDirection::Forward) {
+self.speak_text(&self.content.get_current_line());
+}
+else {
+self.speak_text("Not found");
+}
+}
+
+fn backward_refind(&mut self) {
+if self.lastly_searched_phrase=="" {
+self.find();
+}
+
+if self.content.find(&self.lastly_searched_phrase, SearchDirection::Backward) {
+self.speak_text(&self.content.get_current_line());
+}
+else {
+self.speak_text("Not found");
+}
 }
 
 //Editing functions
