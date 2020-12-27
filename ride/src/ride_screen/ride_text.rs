@@ -2,6 +2,11 @@ use std::fs;
 use std::fs::File;
 use std::io::Read;
 
+pub enum SearchDirection {
+Backward,
+Forward,
+}
+
 pub struct RideText {
 	current_line_number: usize,
 	current_character_offset: usize,
@@ -451,6 +456,114 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 			}
 		
 		self.lines[line_number+1].indentation_level>self.lines[line_number].indentation_level
+		}
+	
+	fn search_on_line(&self, line_number: usize, starting_position: usize, search_term: &Vec<char>, search_direction: SearchDirection) -> Option<usize> {
+		
+		if search_term.len()==0 || self.lines[line_number].text.len()==0 {
+		return None;
+		}
+		
+		let mut match_streak=0; //The number of matched characters from the search term.
+		let desired_match_streak=search_term.len(); //To make things somewhat nicer.
+		let current_line_text=&self.lines[line_number].text;
+		let mut position=starting_position;
+		
+		match search_direction {
+		SearchDirection::Backward => {
+		
+		loop {
+		if current_line_text[position]==search_term[search_term.len()-1-match_streak] {
+		match_streak+=1;
+		}
+		else {
+		position+=match_streak-1;
+		match_streak=0;
+		}
+		
+		if match_streak==desired_match_streak {
+		return Some(position+search_term.len()); //As we're moving backward
+		}
+		
+		position-=1;
+		if position==0 {
+		break;
+		}
+		}
+		},
+		SearchDirection::Forward => {
+		while position<current_line_text.len() {
+		if current_line_text[position]==search_term[match_streak] {
+		match_streak+=1;
+		}
+		else {
+		position-=match_streak-1;
+		match_streak=0;
+		}
+		
+		if match_streak==desired_match_streak {
+		return Some((position-match_streak) as usize);
+		}
+		
+		position+=1;
+		}
+		},
+		};
+		
+		None
+		
+		}
+	
+	pub fn find(&mut self, search_term: &str, search_direction: SearchDirection) -> bool {
+		
+		let search_term: Vec<char>=search_term.chars().collect();
+		
+		match search_direction {
+		SearchDirection::Backward => {
+		if let Some(position) = self.search_on_line(self.current_line_number, self.current_character_offset, &search_term, SearchDirection::Backward) {
+		self.current_character_offset=position;
+		return true;
+		}
+		
+		for line_number in (0..self.current_line_number).rev() {
+		let character_offset: usize=if self.lines[line_number].text.len()>0 {
+		self.lines[line_number].text.len()-1
+		}
+		else {
+		0
+		};
+		if let Some(position) = self.search_on_line(line_number, character_offset, &search_term, SearchDirection::Backward) {
+		self.current_line_number=line_number;
+		self.current_character_offset=position;
+		return true;
+		}
+		}
+		
+		},
+		SearchDirection::Forward => {
+		if let Some(position) = self.search_on_line(self.current_line_number, self.current_character_offset+1, &search_term, SearchDirection::Forward) {
+		self.current_character_offset=position;
+		return true;
+		}
+		
+		for line_number in (self.current_line_number+1)..self.lines.len() {
+		let character_offset: usize=if self.lines[line_number].text.len()>0 {
+		self.lines[line_number].text.len()-1
+		}
+		else {
+		0
+		};
+		if let Some(position) = self.search_on_line(line_number, character_offset, &search_term, SearchDirection::Forward) {
+		self.current_line_number=line_number;
+		self.current_character_offset=position;
+		return true;
+		}
+		}
+		
+		},
+		};
+		
+		false
 		}
 	
 	pub fn file_path(&self) -> &Option<String> {
