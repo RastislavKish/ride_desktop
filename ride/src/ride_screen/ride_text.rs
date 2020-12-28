@@ -476,19 +476,21 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		if current_line_text[position]==search_term[search_term.len()-1-match_streak] {
 		match_streak+=1;
 		}
-		else {
+		else if match_streak>0 {
 		position+=match_streak-1;
 		match_streak=0;
+		continue;
 		}
 		
 		if match_streak==desired_match_streak {
-		return Some(position+search_term.len()); //As we're moving backward
+		return Some(position);
 		}
 		
-		position-=1;
 		if position==0 {
 		break;
 		}
+		
+		position-=1;
 		}
 		},
 		SearchDirection::Forward => {
@@ -496,13 +498,14 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		if current_line_text[position]==search_term[match_streak] {
 		match_streak+=1;
 		}
-		else {
+		else if match_streak>0 {
 		position-=match_streak-1;
 		match_streak=0;
+		continue;
 		}
 		
 		if match_streak==desired_match_streak {
-		return Some((position-match_streak) as usize);
+		return Some((position-(match_streak-1)) as usize);
 		}
 		
 		position+=1;
@@ -547,12 +550,8 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		}
 		
 		for line_number in (self.current_line_number+1)..self.lines.len() {
-		let character_offset: usize=if self.lines[line_number].text.len()>0 {
-		self.lines[line_number].text.len()-1
-		}
-		else {
-		0
-		};
+		let character_offset: usize=0;
+		
 		if let Some(position) = self.search_on_line(line_number, character_offset, &search_term, SearchDirection::Forward) {
 		self.current_line_number=line_number;
 		self.current_character_offset=position;
