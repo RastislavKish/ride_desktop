@@ -325,6 +325,12 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		}
 	
 	pub fn paste(&mut self, text: &str) -> Result<(), String> {
+		let text=if !text.trim_end().contains("\n") {
+		text.trim_start()
+		}
+		else {
+		text
+		};
 		let chars: Vec<char>=text.chars().collect();
 		if !text.contains('\n') {
 		for i in 0..chars.len() {
