@@ -19,6 +19,7 @@ lazy_static="1.4.0"
 serde={version="1.0.110", features=["derive"]}
 rmp-serde="0.14.3"
 speech-dispatcher="0.4.3"
+regex="1.4.3"
 
 [dependencies.gtk]
 version = "0.8.1"
