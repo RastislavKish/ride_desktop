@@ -583,7 +583,7 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		return Err("Error: marks can't be empty".to_string());
 		}
 		
-		let search_regex=Regex::new(&format!("({})|({})|(//)|(#)|(/\\*)|(\\*/)|(\")|(')", beginning_mark, ending_mark)).unwrap();
+		let search_regex=Regex::new(&format!("(\\{})|(\\{})|(//)|(#)|(/\\*)|(\\*/)|(\")|(')", beginning_mark, ending_mark)).unwrap();
 		let mut indentation_level: i32=0;
 		let mut in_quotes: Option<String>=None;
 		let mut in_comment: Option<CommentType>=None;
