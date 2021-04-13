@@ -14,7 +14,7 @@ connection_name+="-connection";
 let connection=Connection::open(app_name, connection_name, "".to_string(), speech_dispatcher::Mode::Single);
 connection.set_language("sk");
 connection.set_voice_pitch(10);
-connection.set_voice_rate(10);
+connection.set_voice_rate(23);
 
 Speech {connection}
 }
