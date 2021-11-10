@@ -575,7 +575,11 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		
 		false
 		}
-	
+
+pub fn current_indentation_level(&self) -> usize {
+self.current_indentation_level
+}
+
 	pub fn file_path(&self) -> &Option<String> {
 	&self.file_path
 	}

@@ -228,7 +228,13 @@ if self.lastly_searched_phrase=="" {
 self.find();
 }
 
+let original_indentation_level=self.content.current_indentation_level();
+
 if self.content.find(&self.lastly_searched_phrase, SearchDirection::Forward) {
+if self.content.current_indentation_level()!=original_indentation_level {
+self.resources.chil.play();
+}
+
 self.speak_text(&self.content.get_current_line());
 }
 else {
@@ -241,7 +247,13 @@ if self.lastly_searched_phrase=="" {
 self.find();
 }
 
+let original_indentation_level=self.content.current_indentation_level();
+
 if self.content.find(&self.lastly_searched_phrase, SearchDirection::Backward) {
+if self.content.current_indentation_level()!=original_indentation_level {
+self.resources.chil.play();
+}
+
 self.speak_text(&self.content.get_current_line());
 }
 else {
