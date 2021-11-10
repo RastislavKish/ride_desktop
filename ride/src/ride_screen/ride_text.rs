@@ -547,6 +547,7 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		if let Some(position) = self.search_on_line(line_number, character_offset, &search_term, SearchDirection::Backward) {
 		self.current_line_number=line_number;
 		self.current_character_offset=position;
+		self.current_indentation_level=self.lines[self.current_line_number].indentation_level;
 		return true;
 		}
 		}
@@ -564,6 +565,7 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		if let Some(position) = self.search_on_line(line_number, character_offset, &search_term, SearchDirection::Forward) {
 		self.current_line_number=line_number;
 		self.current_character_offset=position;
+		self.current_indentation_level=self.lines[self.current_line_number].indentation_level;
 		return true;
 		}
 		}
