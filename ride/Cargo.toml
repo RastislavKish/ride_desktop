@@ -25,6 +25,6 @@ version = "0.8.1"
 features = ["v3_16"]
 
 [dependencies.gio]
-version = ""
+version = "0.8.1"
 features = ["v2_44"]
 

@@ -389,12 +389,15 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 				}
 				
 				let line_text: String=line.text.iter().collect();
+
+			if line.text[0]==' ' || line.text[0]=='\t' {
+			line.text.drain(0..current_indentation_level);
+			}
+
 				if (current_indentation_level==0 && line.text.len()==1) || comment_level>0 || line_text.trim().starts_with("//") || line_text.trim().starts_with("#") || line_text.trim().starts_with(";") || line_text.trim().starts_with("<<<<<<<") || line_text.trim().starts_with(">>>>>>>") || line_text.starts_with("=======") || line_text.trim().starts_with("/*") || line_text.trim().starts_with("\"\"\"") {
 				lines_adjustment_data[line_number]=true;
 				continue;
 				}
-				
-			line.text.drain(0..current_indentation_level);
 			
 			if current_indentation_level>previous_indentation_level {
 				indentation_steps.push(current_indentation_level);
