@@ -402,7 +402,7 @@ if let Some(func) = self.keyboard_shortcuts_manager.get_function(key) {
 func(self);
 }
 else if !key.control() {
-if let Some(character) = gdk::keyval_to_unicode(key.keyval()) {
+if let Some(character) = key.keyval().to_unicode() {
 if !character.is_control() {
 self.on_text_entered(character);
 }

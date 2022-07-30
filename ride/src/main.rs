@@ -2,9 +2,9 @@ use std::env;
 use std::rc::Rc;
 use std::sync::{Arc, mpsc};
 use std::thread;
+use std::time::Duration;
 
 use gtk::prelude::*;
-use gio::prelude::*;
 
 use gtk::{Application, ApplicationWindow};
 
@@ -38,8 +38,7 @@ GtkThreadMessage::ApplicationExit => break,
 ride_screen.on_exit();
 });
 
-let application=Application::new(None, Default::default())
-.expect("Failed to initialize gtk application.");
+let application=Application::new(None, Default::default());
 
 let tx_application=gtk_tx.clone();
 application.connect_activate(move |app| {
@@ -59,7 +58,7 @@ Inhibit(false)
 
 let window_timer=window.clone();
 let test_rx=gtk_rx.clone();
-gtk::timeout_add(100, move || {
+glib::source::timeout_add_local(Duration::from_millis(100), move || {
 
 if let Ok(message) = test_rx.try_recv() {
 match message {
@@ -78,7 +77,7 @@ Continue(true)
 window.show_all();
 });
 
-application.run(&[]);
+application.run();
 
 gtk_tx.send(GtkThreadMessage::ApplicationExit).unwrap();
 handle.join().unwrap();

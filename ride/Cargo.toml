@@ -10,21 +10,16 @@ edition = "2018"
 [dependencies]
 
 bass={path="../bass"}
-gdk="0.12.1"
 
 clipboard="0.5.0"
-derivative="2.1.1"
+derivative="2.2.0"
 dialog="0.3.0"
 lazy_static="1.4.0"
-serde={version="1.0.110", features=["derive"]}
-rmp-serde="0.14.3"
-speech-dispatcher="0.4.3"
+serde={version="1.0.140", features=["derive"]}
+rmp-serde="1.1.0"
+speech-dispatcher="0.13.1"
 
-[dependencies.gtk]
-version = "0.8.1"
-features = ["v3_16"]
-
-[dependencies.gio]
-version = "0.8.1"
-features = ["v2_44"]
+gtk="0.15.5"
+gdk="0.15.4"
+glib="0.15.12"
 
