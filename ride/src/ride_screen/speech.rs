@@ -12,9 +12,6 @@ let mut connection_name=String::clone(&app_name);
 connection_name+="-connection";
 
 let connection=Connection::open(&app_name[..], &connection_name[..], "", speech_dispatcher::Mode::Threaded).unwrap();
-connection.set_language("sk").unwrap();
-connection.set_voice_pitch(10).unwrap();
-connection.set_voice_rate(23).unwrap();
 
 Speech {connection}
 }
