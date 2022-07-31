@@ -21,5 +21,6 @@ speech-dispatcher="0.13.1"
 
 gtk="0.15.5"
 gdk="0.15.4"
+gio="0.15.12"
 glib="0.15.12"
 

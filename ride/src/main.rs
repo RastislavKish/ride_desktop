@@ -1,12 +1,14 @@
 use std::env;
 use std::rc::Rc;
-use std::sync::{Arc, mpsc};
+use std::sync::{Arc, mpsc, mpsc::{Receiver, Sender}};
 use std::thread;
 use std::time::Duration;
 
 use gtk::prelude::*;
 
 use gtk::{Application, ApplicationWindow};
+
+use gio::ApplicationFlags;
 
 mod ride_screen;
 
@@ -38,11 +40,29 @@ GtkThreadMessage::ApplicationExit => break,
 ride_screen.on_exit();
 });
 
-let application=Application::new(None, Default::default());
 
-let tx_application=gtk_tx.clone();
+let application=Application::new(None, ApplicationFlags::HANDLES_OPEN);
+
+let activate_gtk_tx=gtk_tx.clone();
+let activate_gtk_rx=gtk_rx.clone();
 application.connect_activate(move |app| {
-let tx_key_press_event=tx_application.clone();
+activate_window(app, activate_gtk_tx.clone(), activate_gtk_rx.clone());
+});
+
+let open_gtk_tx=gtk_tx.clone();
+let open_gtk_rx=gtk_rx.clone();
+application.connect_open(move |app, _, _| {
+activate_window(app, open_gtk_tx.clone(), open_gtk_rx.clone());
+});
+
+application.run();
+
+gtk_tx.send(GtkThreadMessage::ApplicationExit).unwrap();
+handle.join().unwrap();
+}
+
+fn activate_window(app: &Application, gtk_tx: Sender<GtkThreadMessage>, gtk_rx: Rc<Receiver<RideThreadMessage>>) {
+let tx_key_press_event=gtk_tx.clone();
 
 let window=Arc::new(ApplicationWindow::new(app));
 window.set_title("Ride");
@@ -73,13 +93,6 @@ Continue(true)
 
 //ride_screen.set_window(window.clone());
 
-
 window.show_all();
-});
-
-application.run();
-
-gtk_tx.send(GtkThreadMessage::ApplicationExit).unwrap();
-handle.join().unwrap();
 }
 
