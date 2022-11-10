@@ -659,6 +659,7 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		
 		indentation_level+=indentation_delta;
 		
+		line.text=(line_text.trim().to_string()+"\n").chars().collect();
 		}
 		}
 		
