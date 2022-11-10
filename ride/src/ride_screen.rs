@@ -77,6 +77,7 @@ keyboard_shortcuts_manager.add_shortcut(false, false, false, Key::Delete, &Self:
 keyboard_shortcuts_manager.add_shortcut(true, false, false, Key::C, &Self::copy);
 keyboard_shortcuts_manager.add_shortcut(true, false, false, Key::X, &Self::cut);
 keyboard_shortcuts_manager.add_shortcut(true, false, false, Key::V, &Self::paste);
+keyboard_shortcuts_manager.add_shortcut(true, false, false, Key::I, &Self::reformat);
 
 //Settings shortcuts
 
@@ -344,6 +345,29 @@ Err(message) => {
 self.speech.speak(&message);
 },
 }
+}
+
+fn reformat(&mut self) {
+self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
+let beginning_mark=dialog::Input::new("Enter the mark beginning a block").title("Reformat").show().unwrap();
+
+if let Some(beginning_mark)=beginning_mark {
+let beginning_mark=beginning_mark.trim();
+if beginning_mark!="" {
+let ending_mark=dialog::Input::new("Enter the mark ending a block").title("Reformat").show().unwrap();
+
+if let Some(ending_mark)=ending_mark {
+let ending_mark=ending_mark.trim();
+if ending_mark!="" {
+
+self.content.reformat(&beginning_mark, &ending_mark).unwrap();
+
+}
+}
+}
+}
+
+self.ride_tx.send(RideThreadMessage::ShowWindow).unwrap();
 }
 
 //Configuration functions

@@ -2,9 +2,16 @@ use std::fs;
 use std::fs::File;
 use std::io::Read;
 
+use regex::Regex;
+
 pub enum SearchDirection {
 Backward,
 Forward,
+}
+
+pub enum CommentType {
+LineComment,
+BlockComment,
 }
 
 pub struct RideText {
@@ -574,6 +581,90 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		};
 		
 		false
+		}
+
+	pub fn reformat(&mut self, beginning_mark: &str, ending_mark: &str) -> Result<(), String> {
+		if beginning_mark=="" || ending_mark=="" {
+		return Err("Error: marks can't be empty".to_string());
+		}
+		
+		let search_regex=Regex::new(&format!("(\\{})|(\\{})|(//)|(#)|(/\\*)|(\\*/)|(\")|(')", beginning_mark, ending_mark)).unwrap();
+		let mut indentation_level: i32=0;
+		let mut in_quotes: Option<String>=None;
+		let mut in_comment: Option<CommentType>=None;
+		
+		for line in &mut self.lines {
+		let line_text=line.text.iter().collect::<String>();
+		
+		let mut indentation_delta: i32=0;
+		
+		for m in search_regex.find_iter(&line_text) {
+		match m.as_str() {
+		"\"" | "'" => {
+		if in_comment.is_none() {
+		if let Some(quote)=&in_quotes {
+		if quote==m.as_str() {
+		in_quotes=None;
+		}
+		}
+		else {
+		in_quotes=Some(m.as_str().to_string());
+		}
+		}
+		},
+		"//" | "#" | "/*" | "*/" => {
+		if in_quotes.is_none() {
+		if let Some(comment_type)=&in_comment {
+		if let CommentType::BlockComment=comment_type {
+		if m.as_str()=="*/" {
+		in_comment=None;
+		}
+		}
+		}
+		else {
+		in_comment=match m.as_str() {
+		"/*" | "*/" => Some(CommentType::BlockComment),
+		_ => Some(CommentType::LineComment),
+		};
+		}
+		}
+		},
+		b_mark if b_mark==beginning_mark => {
+		indentation_delta+=1;
+		},
+		e_mark if e_mark==ending_mark => {
+		indentation_delta-=1;
+		},
+		_ => {},
+		}
+		
+		}
+		
+		if indentation_delta>0 && line_text.starts_with(beginning_mark) {
+		indentation_level+=indentation_delta;
+		line.indentation_level=if indentation_level>=0 {
+		indentation_level as usize
+		}
+		else {
+		0
+		};
+		}
+		else {
+		line.indentation_level=if indentation_level>=0 {
+		indentation_level as usize
+		}
+		else {
+		0
+		};
+		
+		indentation_level+=indentation_delta;
+		
+		line.text=(line_text.trim().to_string()+"\n").chars().collect();
+		}
+		}
+		
+		Ok(())
+		
 		}
 
 pub fn current_indentation_level(&self) -> usize {
