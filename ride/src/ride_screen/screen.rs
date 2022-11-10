@@ -38,7 +38,7 @@ modifiers: gdk::ModifierType,
 key: u16,
 #[derivative(PartialEq="ignore")]
 #[derivative(Hash="ignore")]
-keyval: u32,
+keyval: gdk::keys::Key,
 }
 
 impl KeyboardShortcut {
@@ -60,11 +60,11 @@ modifiers=modifiers | gdk::ModifierType::MOD1_MASK;
 
 let key=key as u16;
 
-KeyboardShortcut {modifiers, key, keyval: 0}
+KeyboardShortcut {modifiers, key, keyval: gdk::keys::Key::from_unicode(' ')}
 }
 
 pub fn from_eventkey(eventkey: &gdk::EventKey) -> KeyboardShortcut {
-let modifiers=eventkey.get_state();
+let modifiers=eventkey.state();
 let control=modifiers & gdk::ModifierType::CONTROL_MASK == gdk::ModifierType::CONTROL_MASK;
 let shift=modifiers & gdk::ModifierType::SHIFT_MASK == gdk::ModifierType::SHIFT_MASK;
 let alt=modifiers & gdk::ModifierType::MOD1_MASK == gdk::ModifierType::MOD1_MASK;
@@ -83,15 +83,15 @@ if alt {
 modifiers=modifiers | gdk::ModifierType::MOD1_MASK;
 }
 
-KeyboardShortcut {modifiers, key: eventkey.get_hardware_keycode(), keyval: eventkey.get_keyval()}
+KeyboardShortcut {modifiers, key: eventkey.hardware_keycode(), keyval: eventkey.keyval()}
 }
 
 pub fn control(&self) -> bool {
 self.modifiers & gdk::ModifierType::CONTROL_MASK==gdk::ModifierType::CONTROL_MASK
 }
 
-pub fn keyval(&self) -> u32 {
-self.keyval
+pub fn keyval(&self) -> &gdk::keys::Key {
+&self.keyval
 }
 
 }

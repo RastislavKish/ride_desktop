@@ -229,7 +229,13 @@ if self.lastly_searched_phrase=="" {
 self.find();
 }
 
+let original_indentation_level=self.content.current_indentation_level();
+
 if self.content.find(&self.lastly_searched_phrase, SearchDirection::Forward) {
+if self.content.current_indentation_level()!=original_indentation_level {
+self.resources.chil.play();
+}
+
 self.speak_text(&self.content.get_current_line());
 }
 else {
@@ -242,7 +248,13 @@ if self.lastly_searched_phrase=="" {
 self.find();
 }
 
+let original_indentation_level=self.content.current_indentation_level();
+
 if self.content.find(&self.lastly_searched_phrase, SearchDirection::Backward) {
+if self.content.current_indentation_level()!=original_indentation_level {
+self.resources.chil.play();
+}
+
 self.speak_text(&self.content.get_current_line());
 }
 else {
@@ -414,7 +426,7 @@ if let Some(func) = self.keyboard_shortcuts_manager.get_function(key) {
 func(self);
 }
 else if !key.control() {
-if let Some(character) = gdk::keyval_to_unicode(key.keyval()) {
+if let Some(character) = key.keyval().to_unicode() {
 if !character.is_control() {
 self.on_text_entered(character);
 }

@@ -396,12 +396,15 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 				}
 				
 				let line_text: String=line.text.iter().collect();
+
+			if line.text[0]==' ' || line.text[0]=='\t' {
+			line.text.drain(0..current_indentation_level);
+			}
+
 				if (current_indentation_level==0 && line.text.len()==1) || comment_level>0 || line_text.trim().starts_with("//") || line_text.trim().starts_with("#") || line_text.trim().starts_with(";") || line_text.trim().starts_with("<<<<<<<") || line_text.trim().starts_with(">>>>>>>") || line_text.starts_with("=======") || line_text.trim().starts_with("/*") || line_text.trim().starts_with("\"\"\"") {
 				lines_adjustment_data[line_number]=true;
 				continue;
 				}
-				
-			line.text.drain(0..current_indentation_level);
 			
 			if current_indentation_level>previous_indentation_level {
 				indentation_steps.push(current_indentation_level);
@@ -551,6 +554,7 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		if let Some(position) = self.search_on_line(line_number, character_offset, &search_term, SearchDirection::Backward) {
 		self.current_line_number=line_number;
 		self.current_character_offset=position;
+		self.current_indentation_level=self.lines[self.current_line_number].indentation_level;
 		return true;
 		}
 		}
@@ -568,6 +572,7 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		if let Some(position) = self.search_on_line(line_number, character_offset, &search_term, SearchDirection::Forward) {
 		self.current_line_number=line_number;
 		self.current_character_offset=position;
+		self.current_indentation_level=self.lines[self.current_line_number].indentation_level;
 		return true;
 		}
 		}
@@ -577,7 +582,7 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		
 		false
 		}
-	
+
 	pub fn reformat(&mut self, beginning_mark: &str, ending_mark: &str) -> Result<(), String> {
 		if beginning_mark=="" || ending_mark=="" {
 		return Err("Error: marks can't be empty".to_string());
@@ -660,7 +665,11 @@ return Ok(current_indentation_level!=self.current_indentation_level);
 		Ok(())
 		
 		}
-	
+
+pub fn current_indentation_level(&self) -> usize {
+self.current_indentation_level
+}
+
 	pub fn file_path(&self) -> &Option<String> {
 	&self.file_path
 	}
