@@ -447,7 +447,13 @@ impl<'a> RideScreen<'a> {
         }
 
     fn speak_character(&mut self, character: char) {
-        self.speech.speak(&self.settings.text_renderer.render_character(character));
+        if let Some(rendered_character)=self.settings.text_renderer.render_character(character) {
+            self.speech.speak(&rendered_character);
+            }
+        else {
+            self.speech.speak_char(&character.to_string());
+            }
+
         if character.is_uppercase() && self.settings.beep_on_capital_characters {
             self.resources.capital.play();
             }

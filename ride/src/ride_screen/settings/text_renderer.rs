@@ -28,16 +28,16 @@ impl TextRenderer {
         local_text
         }
 
-    pub fn render_character(&self, character: char) -> String {
+    pub fn render_character(&self, character: char) -> Option<String> {
         if character=='\n' {
-            return "blank".to_string();
+            return Some("blank".to_string());
             }
 
         if self.characters_definitions.contains_key(&character) {
-            return (&self.characters_definitions[&character]).to_string();
+            return Some((&self.characters_definitions[&character]).to_string());
             }
 
-        character.to_string()
+        None
         }
 
     pub fn add_character_definition(&mut self, character: char, definition: &str) {

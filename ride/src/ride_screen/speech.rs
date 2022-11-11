@@ -20,6 +20,10 @@ impl Speech {
         self.connection.say(speech_dispatcher::Priority::Text, text);
         }
 
+    pub fn speak_char(&self, text: &str) {
+        self.connection.char(speech_dispatcher::Priority::Text, text).unwrap();
+        }
+
     }
 
 #[cfg(test)]
