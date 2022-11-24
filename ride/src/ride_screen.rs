@@ -38,8 +38,8 @@ impl<'a> RideScreen<'a> {
         let speech=Speech::new("ride");
         let content=RideText::new();
         let lastly_searched_phrase="".to_string();
-        let mut settings=Settings::new();
-        settings.load(&(std::env::var("HOME").unwrap()+"/.config/ride/settings.yaml"));
+        let settings=Settings::from_file(&Settings::get_settings_file_path("ride", "settings.yaml"))
+        .unwrap_or(Settings::new());
 
         let mut keyboard_shortcuts_manager=KeyboardShortcutsManager::new();
 
@@ -439,7 +439,7 @@ impl<'a> RideScreen<'a> {
         }
 
     pub fn on_exit(&self) {
-        self.settings.save(&(std::env::var("HOME").unwrap()+"/.config/ride/settings.yaml"));
+        self.settings.save(&Settings::get_settings_file_path("ride", "settings.yaml"));
         }
 
     fn speak_text(&self, text: &str) {

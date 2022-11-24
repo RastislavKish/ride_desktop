@@ -1,5 +1,6 @@
-use std::collections::HashMap;
 use std::fs;
+use std::error::Error;
+use std::path::Path;
 
 use serde::{Serialize, Deserialize};
 
@@ -13,6 +14,8 @@ enum Value {
     TextRenderer(TextRenderer),
     }
 
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Settings {
     pub beep_on_capital_characters: bool,
     pub text_renderer: TextRenderer,
@@ -24,24 +27,10 @@ impl Settings {
         Settings {beep_on_capital_characters: true, text_renderer: TextRenderer::new()}
         }
 
-    pub fn load(&mut self, file_path: &str) {
-        let Ok(data)=fs::read_to_string(file_path) else {return;};
-        let Ok(saved_settings)=serde_yaml::from_str::<HashMap<String, Value>>(&data[..]) else {
-            return;
-            };
+    pub fn from_file(file_path: &str) -> Result<Settings, Box<dyn Error>> {
+        let settings: Settings=serde_yaml::from_str(&fs::read_to_string(&file_path)?)?;
 
-        for (key, value) in saved_settings.into_iter() {
-            match (&key[..], value) {
-                ("BeepOnCapitalCharacters", Value::Bool(val)) => {
-                    self.beep_on_capital_characters=val;
-                    },
-                ("TextRenderer", Value::TextRenderer(val)) => {
-                    self.text_renderer=val;
-                    },
-                _ => (),
-                };
-            }
-
+        Ok(settings)
         }
 
     pub fn save(&self, file_path: &str) {
@@ -50,12 +39,22 @@ impl Settings {
             let prefix=path.parent().unwrap();
             fs::create_dir_all(prefix).unwrap();
             }
-        let mut settings_to_save: HashMap<String, Value>=HashMap::new();
 
-        settings_to_save.insert("BeepOnCapitalCharacters".to_string(), Value::Bool(self.beep_on_capital_characters));
-        settings_to_save.insert("TextRenderer".to_string(), Value::TextRenderer(self.text_renderer.clone()));
+        fs::write(file_path, &serde_yaml::to_string(self).unwrap()).unwrap();
+        }
 
-        fs::write(file_path, serde_yaml::to_string(&settings_to_save).unwrap()).unwrap();
+    pub fn get_settings_file_path(project: &str, file_name: &str) -> String {
+        let config_dir=dirs::config_dir().unwrap();
+
+        Path::new(&config_dir).join(project).join(file_name).to_str().unwrap().to_string()
+        }
+
+    }
+
+impl Default for Settings {
+
+    fn default() -> Self {
+        Settings::new()
         }
 
     }

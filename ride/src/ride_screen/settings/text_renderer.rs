@@ -50,6 +50,14 @@ impl TextRenderer {
 
     }
 
+impl Default for TextRenderer {
+
+    fn default() -> Self {
+        TextRenderer::new()
+        }
+
+    }
+
 #[cfg(test)]
 mod tests {
     #[test]
