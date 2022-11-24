@@ -376,22 +376,15 @@ impl<'a> RideScreen<'a> {
         self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
         //std::thread::sleep(std::time::Duration::from_secs(1));
 
-        let character=dialog::Input::new("Enter the desired character to be defined for character rendering.").title("Add character definition").show().unwrap();
-        let definition=dialog::Input::new("Enter the definition for the entered character.").title("Add character definition").show().unwrap();
+        let character=self.content.get_current_character();
+        let definition=dialog::Input::new(&format!("Enter the definition for the '{character}' character.")).title("Add character definition").show().unwrap();
 
-        if let Some(character) = character {
-            if let Some(definition) = definition {
-                if character=="" || definition == "" {
-                    return;
-                    }
-
-                let chars: Vec<char>=character.chars().collect();
-                if chars.len()!=1 {
-                    dialog::Message::new("You have entered invalid character to be defined.").title("Error").show().unwrap();
-                    }
-
-                self.settings.text_renderer.add_character_definition(chars[0], &definition);
+        if let Some(definition) = definition {
+            if definition == "" {
+                return;
                 }
+
+            self.settings.text_renderer.add_character_definition(character, &definition);
             }
 
         self.ride_tx.send(RideThreadMessage::ShowWindow).unwrap();
@@ -401,8 +394,8 @@ impl<'a> RideScreen<'a> {
         self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
         //std::thread::sleep(std::time::Duration::from_secs(1));
 
-        let string=dialog::Input::new("Enter the desired character to be defined for string rendering.").title("Add character definition").show().unwrap();
-        let definition=dialog::Input::new("Enter the definition for the entered character.").title("Add character definition").show().unwrap();
+        let string=dialog::Input::new("Enter the desired phrase to be defined for string rendering.").title("Add character definition").show().unwrap();
+        let definition=dialog::Input::new("Enter the definition for the entered phrase.").title("Add character definition").show().unwrap();
 
         if let Some(string) = string {
             if let Some(definition) = definition {
