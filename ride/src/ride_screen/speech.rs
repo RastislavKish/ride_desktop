@@ -21,7 +21,12 @@ impl Speech {
         }
 
     pub fn speak_char(&self, text: &str) {
-        self.connection.char(speech_dispatcher::Priority::Text, text).unwrap();
+        if text!=" " {
+            self.connection.char(speech_dispatcher::Priority::Text, text).unwrap();
+            }
+        else {
+            self.connection.char(speech_dispatcher::Priority::Text, "space").unwrap();
+            }
         }
 
     }
