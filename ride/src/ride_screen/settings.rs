@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::fs;
 
-//#[macro_use]
-//use mac::unwrap_or_return;
 use serde::{Serialize, Deserialize};
 
 mod text_renderer;
@@ -27,23 +25,17 @@ impl Settings {
         }
 
     pub fn load(&mut self, file_path: &str) {
-        let saved_settings;
-        if let Ok(data) = fs::read(file_path) {
-            if let Ok(object) = rmp_serde::from_slice::<HashMap<String, Value>>(&data[..]) {
-                saved_settings=object;
-                } else {
-                return;
-                }
-            } else {
+        let Ok(data)=fs::read_to_string(file_path) else {return;};
+        let Ok(saved_settings)=serde_yaml::from_str::<HashMap<String, Value>>(&data[..]) else {
             return;
-            }
+            };
 
         for (key, value) in saved_settings.into_iter() {
-            match &key[..] {
-                "BeepOnCapitalCharacters" => if let Value::Bool(val) = value {
+            match (&key[..], value) {
+                ("BeepOnCapitalCharacters", Value::Bool(val)) => {
                     self.beep_on_capital_characters=val;
                     },
-                "TextRenderer" => if let Value::TextRenderer(val) = value {
+                ("TextRenderer", Value::TextRenderer(val)) => {
                     self.text_renderer=val;
                     },
                 _ => (),
@@ -63,7 +55,7 @@ impl Settings {
         settings_to_save.insert("BeepOnCapitalCharacters".to_string(), Value::Bool(self.beep_on_capital_characters));
         settings_to_save.insert("TextRenderer".to_string(), Value::TextRenderer(self.text_renderer.clone()));
 
-        fs::write(file_path, rmp_serde::to_vec(&settings_to_save).unwrap()).unwrap();
+        fs::write(file_path, serde_yaml::to_string(&settings_to_save).unwrap()).unwrap();
         }
 
     }
