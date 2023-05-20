@@ -17,13 +17,13 @@ dialog="0.3.0"
 dirs="4.0.0"
 lazy_static="1.4.0"
 
-regex="1.4.3"
+regex="1.8.1"
 serde={version="1.0.140", features=["derive"]}
 serde_yaml="0.9.14"
-speech-dispatcher="0.13.1"
+speech-dispatcher="0.16.0"
 
-gtk="0.15.5"
-gdk="0.15.4"
-gio="0.15.12"
-glib="0.15.12"
+gtk="0.17.1"
+gdk="0.17.1"
+gio="0.17.9"
+glib="0.17.9"
 
