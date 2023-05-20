@@ -16,8 +16,6 @@
 
 use std::sync::mpsc::Sender;
 
-use clipboard::{ClipboardProvider, x11_clipboard::X11ClipboardContext};
-
 use gtk::prelude::*;
 
 pub mod screen;
@@ -316,8 +314,7 @@ impl<'a> RideScreen<'a> {
     fn copy(&mut self) {
         match self.content.get_selected_text(false) {
             Ok(text) => {
-                let mut ctx: X11ClipboardContext= X11ClipboardContext::new().unwrap();
-                ctx.set_contents(text).unwrap();
+                self.clipboard_set_text(&text);
                 self.speech.speak("Copied");
                 },
             Err(message) => {
@@ -329,8 +326,7 @@ impl<'a> RideScreen<'a> {
     fn cut(&mut self) {
         match self.content.get_selected_text(true) {
             Ok(text) => {
-                let mut ctx: X11ClipboardContext= X11ClipboardContext::new().unwrap();
-                ctx.set_contents(text).unwrap();
+                self.clipboard_set_text(&text);
                 self.speech.speak("Cutted");
                 },
             Err(message) => {
@@ -340,8 +336,7 @@ impl<'a> RideScreen<'a> {
         }
 
     fn paste(&mut self) {
-        let mut ctx: X11ClipboardContext= X11ClipboardContext::new().unwrap();
-        let text=ctx.get_contents().unwrap();
+        let text=self.clipboard_get_text();
         match self.content.paste(&text) {
             Ok(()) => {
                 self.speech.speak("Pasted");
@@ -516,6 +511,39 @@ impl<'a> RideScreen<'a> {
             });
 
         input_box_receiver.recv().unwrap()
+        }
+
+    pub fn clipboard_get_text(&self) -> String {
+        let (clipboard_sender, clipboard_receiver)=std::sync::mpsc::channel::<String>();
+
+        glib::idle_add_once(move || {
+            if let Some(display)=gdk::Display::default() {
+                if let Some(clipboard)=gtk::Clipboard::default(&display) {
+                    clipboard.request_text(move |_, result| {
+                        if let Some(text)=result {
+                            clipboard_sender.send(text.to_string()).unwrap();
+                            }
+                        else {
+                            clipboard_sender.send("".to_string()).unwrap();
+                            }
+                        });
+                    }
+                }
+            });
+
+        clipboard_receiver.recv().unwrap()
+        }
+
+    pub fn clipboard_set_text(&self, text: &str) {
+        let text=text.to_string();
+
+        glib::source::idle_add_once(move || {
+            if let Some(display)=gdk::Display::default() {
+                if let Some(clipboard)=gtk::Clipboard::default(&display) {
+                    clipboard.set_text(&text);
+                    }
+                }
+            });
         }
 
     }
