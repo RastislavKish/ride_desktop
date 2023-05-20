@@ -98,8 +98,6 @@ fn activate_window(app: &Application, gtk_tx: Sender<GtkThreadMessage>, gtk_rx: 
         if let Ok(message) = test_rx.try_recv() {
             match message {
                 RideThreadMessage::SetWindowTitle(title) => window_timer.set_title(&title),
-                RideThreadMessage::HideWindow => window_timer.hide(),
-                RideThreadMessage::ShowWindow => window_timer.show(),
                 };
             }
 
