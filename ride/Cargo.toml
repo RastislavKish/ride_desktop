@@ -18,10 +18,17 @@ lazy_static="1.4.0"
 regex="1.8.1"
 serde={version="1.0.140", features=["derive"]}
 serde_yaml="0.9.14"
-speech-dispatcher="0.16.0"
 
 gtk="0.17.1"
 gdk="0.17.1"
 gio="0.17.9"
 glib="0.17.9"
+
+[target.'cfg(unix)'.dependencies]
+
+speech-dispatcher="0.16.0"
+
+[target.'cfg(windows)'.dependencies]
+
+tolk="0.5.0"
 
