@@ -14,10 +14,12 @@
 * along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
+use std::sync::Arc;
+
 use tolk::Tolk;
 
 pub struct Speech {
-    tolk: Tolk,
+    tolk: Arc<Tolk>,
     }
 impl Speech {
 
