@@ -21,6 +21,9 @@ use derivative::Derivative;
 
 use super::RideScreen;
 
+pub mod keymap;
+pub use keymap::Key;
+
 pub struct KeyboardShortcutsManager<'a> {
     keyboard_shortcuts: HashMap<KeyboardShortcut, Rc<&'a dyn Fn(&mut RideScreen<'a>)>>,
     }
@@ -110,28 +113,6 @@ impl KeyboardShortcut {
         &self.keyval
         }
 
-    }
-
-#[derive(Eq, PartialEq)]
-pub enum Key {
-    Left=113,
-    Right=114,
-    Up=111,
-    Down=116,
-    Home=110,
-    End=115,
-    Delete=119,
-    Backspace=22,
-    Return=36,
-    X=53,
-    C=54,
-    V=55,
-    S=39,
-    F=41,
-    J=44,
-    R=27,
-    I=31,
-    F3=69,
     }
 
 #[cfg(test)]
