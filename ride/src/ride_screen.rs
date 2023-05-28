@@ -407,7 +407,7 @@ impl<'a> RideScreen<'a> {
         if let Some(func) = self.keyboard_shortcuts_manager.get_function(key) {
             func(self);
             }
-        else if !key.control() {
+        else if !(key.control() ^ key.alt()) {
             if let Some(character) = key.keyval().to_unicode() {
                 if !character.is_control() {
                     self.on_text_entered(character);
