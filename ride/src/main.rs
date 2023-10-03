@@ -23,6 +23,7 @@ use std::time::Duration;
 use gtk::prelude::*;
 
 use gtk::{Application, ApplicationWindow};
+use glib::{ControlFlow, Propagation};
 
 use gio::ApplicationFlags;
 
@@ -88,7 +89,7 @@ fn activate_window(app: &Application, gtk_tx: Sender<GtkThreadMessage>, gtk_rx: 
         let keyboard_shortcut=KeyboardShortcut::from_eventkey(&key);
         tx_key_press_event.send(GtkThreadMessage::KeyPress(keyboard_shortcut)).unwrap();
 
-        Inhibit(false)
+        Propagation::Proceed
         });
 
     let window_timer=window.clone();
@@ -101,7 +102,7 @@ fn activate_window(app: &Application, gtk_tx: Sender<GtkThreadMessage>, gtk_rx: 
                 };
             }
 
-        Continue(true)
+        ControlFlow::Continue
         });
 
     //ride_screen.set_window(window.clone());

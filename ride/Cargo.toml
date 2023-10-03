@@ -16,14 +16,14 @@ derivative="2.2.0"
 dirs="4.0.0"
 lazy_static="1.4.0"
 
-regex="1.8.1"
+regex="1.9.6"
 serde={version="1.0.140", features=["derive"]}
 serde_yaml="0.9.14"
 
-gtk="0.17.1"
-gdk="0.17.1"
-gio="0.17.9"
-glib="0.17.9"
+gtk="0.18.1"
+gdk="0.18.0"
+gio="0.18.2"
+glib="0.18.2"
 
 [target.'cfg(unix)'.dependencies]
 

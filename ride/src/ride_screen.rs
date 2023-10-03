@@ -18,6 +18,7 @@ use std::sync::mpsc::Sender;
 
 use copypasta::{ClipboardContext, ClipboardProvider};
 use gtk::prelude::*;
+use glib::Propagation;
 
 pub mod screen;
 
@@ -492,10 +493,10 @@ impl<'a> RideScreen<'a> {
             entry.connect_key_press_event(move |_, key| {
                 if key.keyval()==gdk::keys::constants::Return {
                     dialog_clone.response(gtk::ResponseType::Ok);
-                    return Inhibit(true);
+                    return Propagation::Stop;
                     }
 
-                Inhibit(false)
+                Propagation::Proceed
                 });
 
             dialog.show_all();
