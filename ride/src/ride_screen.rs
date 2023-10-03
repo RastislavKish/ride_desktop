@@ -16,6 +16,7 @@
 
 use std::sync::mpsc::Sender;
 
+use copypasta::{ClipboardContext, ClipboardProvider};
 use gtk::prelude::*;
 
 pub mod screen;
@@ -32,6 +33,7 @@ use settings::Settings;
 use speech::Speech;
 
 pub struct RideScreen<'a> {
+    clipboard_context: ClipboardContext,
     content: RideText,
     lastly_searched_phrase: String,
     keyboard_shortcuts_manager: KeyboardShortcutsManager<'a>,
@@ -44,6 +46,8 @@ pub struct RideScreen<'a> {
 impl<'a> RideScreen<'a> {
 
     pub fn new(file_path: &str, ride_tx: Sender<RideThreadMessage>) -> Self {
+        let clipboard_context=ClipboardContext::new().unwrap();
+
         let resources=Resources::new();
         let speech=Speech::new("ride");
         let content=RideText::new();
@@ -94,7 +98,7 @@ impl<'a> RideScreen<'a> {
         keyboard_shortcuts_manager.add_shortcut(true, false, false, Key::R, &Self::add_character_definition);
         keyboard_shortcuts_manager.add_shortcut(true, true, false, Key::R, &Self::add_string_definition);
 
-        let mut result=Self {content, lastly_searched_phrase, keyboard_shortcuts_manager, resources, settings, speech, ride_tx};
+        let mut result=Self {clipboard_context, content, lastly_searched_phrase, keyboard_shortcuts_manager, resources, settings, speech, ride_tx};
 
         result.load_from_file(file_path);
 
@@ -513,37 +517,16 @@ impl<'a> RideScreen<'a> {
         input_box_receiver.recv().unwrap()
         }
 
-    pub fn clipboard_get_text(&self) -> String {
-        let (clipboard_sender, clipboard_receiver)=std::sync::mpsc::channel::<String>();
+    pub fn clipboard_get_text(&mut self) -> String {
+        if let Ok(text)=self.clipboard_context.get_contents() {
+            return text;
+            }
 
-        glib::idle_add_once(move || {
-            if let Some(display)=gdk::Display::default() {
-                if let Some(clipboard)=gtk::Clipboard::default(&display) {
-                    clipboard.request_text(move |_, result| {
-                        if let Some(text)=result {
-                            clipboard_sender.send(text.to_string()).unwrap();
-                            }
-                        else {
-                            clipboard_sender.send("".to_string()).unwrap();
-                            }
-                        });
-                    }
-                }
-            });
-
-        clipboard_receiver.recv().unwrap()
+        String::new()
         }
 
-    pub fn clipboard_set_text(&self, text: &str) {
-        let text=text.to_string();
-
-        glib::source::idle_add_once(move || {
-            if let Some(display)=gdk::Display::default() {
-                if let Some(clipboard)=gtk::Clipboard::default(&display) {
-                    clipboard.set_text(&text);
-                    }
-                }
-            });
+    pub fn clipboard_set_text(&mut self, text: &str) {
+        self.clipboard_context.set_contents(text.to_string()).unwrap();
         }
 
     }
