@@ -21,6 +21,9 @@ use derivative::Derivative;
 
 use super::RideScreen;
 
+pub mod keymap;
+pub use keymap::Key;
+
 pub struct KeyboardShortcutsManager<'a> {
     keyboard_shortcuts: HashMap<KeyboardShortcut, Rc<&'a dyn Fn(&mut RideScreen<'a>)>>,
     }
@@ -63,15 +66,13 @@ impl KeyboardShortcut {
         let mut modifiers: gdk::ModifierType=gdk::ModifierType::empty();
 
         if control {
-            modifiers=modifiers | gdk::ModifierType::CONTROL_MASK;
+            modifiers.insert(gdk::ModifierType::CONTROL_MASK);
             }
-
         if shift {
-            modifiers=modifiers | gdk::ModifierType::SHIFT_MASK;
+            modifiers.insert(gdk::ModifierType::SHIFT_MASK);
             }
-
         if alt {
-            modifiers=modifiers | gdk::ModifierType::MOD1_MASK;
+            modifiers.insert(gdk::ModifierType::MOD1_MASK);
             }
 
         let key=key as u16;
@@ -80,58 +81,23 @@ impl KeyboardShortcut {
         }
 
     pub fn from_eventkey(eventkey: &gdk::EventKey) -> KeyboardShortcut {
-        let modifiers=eventkey.state();
-        let control=modifiers & gdk::ModifierType::CONTROL_MASK == gdk::ModifierType::CONTROL_MASK;
-        let shift=modifiers & gdk::ModifierType::SHIFT_MASK == gdk::ModifierType::SHIFT_MASK;
-        let alt=modifiers & gdk::ModifierType::MOD1_MASK == gdk::ModifierType::MOD1_MASK;
-
-        let mut modifiers: gdk::ModifierType=gdk::ModifierType::empty();
-
-        if control {
-            modifiers=modifiers | gdk::ModifierType::CONTROL_MASK;
-            }
-
-        if shift {
-            modifiers=modifiers | gdk::ModifierType::SHIFT_MASK;
-            }
-
-        if alt {
-            modifiers=modifiers | gdk::ModifierType::MOD1_MASK;
-            }
+        let modifiers=eventkey.state()
+        .intersection(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SHIFT_MASK | gdk::ModifierType::MOD1_MASK);
 
         KeyboardShortcut {modifiers, key: eventkey.hardware_keycode(), keyval: eventkey.keyval()}
         }
 
     pub fn control(&self) -> bool {
-        self.modifiers & gdk::ModifierType::CONTROL_MASK==gdk::ModifierType::CONTROL_MASK
+        self.modifiers.contains(gdk::ModifierType::CONTROL_MASK)
+        }
+    pub fn alt(&self) -> bool {
+        self.modifiers.contains(gdk::ModifierType::MOD1_MASK)
         }
 
     pub fn keyval(&self) -> &gdk::keys::Key {
         &self.keyval
         }
 
-    }
-
-#[derive(Eq, PartialEq)]
-pub enum Key {
-    Left=113,
-    Right=114,
-    Up=111,
-    Down=116,
-    Home=110,
-    End=115,
-    Delete=119,
-    Backspace=22,
-    Return=36,
-    X=53,
-    C=54,
-    V=55,
-    S=39,
-    F=41,
-    J=44,
-    R=27,
-    I=31,
-    F3=69,
     }
 
 #[cfg(test)]

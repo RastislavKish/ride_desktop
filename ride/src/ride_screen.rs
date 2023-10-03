@@ -16,15 +16,10 @@
 
 use std::sync::mpsc::Sender;
 
-use clipboard::{ClipboardProvider, x11_clipboard::X11ClipboardContext};
-use dialog::DialogBox;
-
-//use gtk::prelude::*;
-//use gtk::{ButtonsType, DialogFlags, MessageType, MessageDialog, Window};
+use copypasta::{ClipboardContext, ClipboardProvider};
+use gtk::prelude::*;
 
 pub mod screen;
-
-//use std::rc::Rc;
 
 mod ride_text;
 mod resources;
@@ -38,6 +33,7 @@ use settings::Settings;
 use speech::Speech;
 
 pub struct RideScreen<'a> {
+    clipboard_context: ClipboardContext,
     content: RideText,
     lastly_searched_phrase: String,
     keyboard_shortcuts_manager: KeyboardShortcutsManager<'a>,
@@ -50,6 +46,8 @@ pub struct RideScreen<'a> {
 impl<'a> RideScreen<'a> {
 
     pub fn new(file_path: &str, ride_tx: Sender<RideThreadMessage>) -> Self {
+        let clipboard_context=ClipboardContext::new().unwrap();
+
         let resources=Resources::new();
         let speech=Speech::new("ride");
         let content=RideText::new();
@@ -100,7 +98,7 @@ impl<'a> RideScreen<'a> {
         keyboard_shortcuts_manager.add_shortcut(true, false, false, Key::R, &Self::add_character_definition);
         keyboard_shortcuts_manager.add_shortcut(true, true, false, Key::R, &Self::add_string_definition);
 
-        let mut result=Self {content, lastly_searched_phrase, keyboard_shortcuts_manager, resources, settings, speech, ride_tx};
+        let mut result=Self {clipboard_context, content, lastly_searched_phrase, keyboard_shortcuts_manager, resources, settings, speech, ride_tx};
 
         result.load_from_file(file_path);
 
@@ -202,9 +200,7 @@ impl<'a> RideScreen<'a> {
         }
 
     fn jump_to_line(&mut self) {
-        self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
-        let input=dialog::Input::new("Enter the number of the line to jump to.").title("Jump to line").show().unwrap();
-        if let Some(text)=input {
+        if let Some(text)=self.input_box("Jump to line", "Enther the number of the line to jump to.") {
             if let Ok(n)=text.trim().parse::<usize>() {
                 match self.content.jump_to_line(n) {
                     Ok(chil) => {
@@ -213,29 +209,24 @@ impl<'a> RideScreen<'a> {
                             }
                         },
                     Err(message) => {
-                        dialog::Message::new(&message).title("Error").show().unwrap();
+                        self.message_box("Error", &message);
                         },
                     };
-                } else {
-                dialog::Message::new("Invalid input.").title("Error").show().unwrap();
+                }
+            else {
+                self.message_box("Error", "Invalid input.");
                 }
             }
-        self.ride_tx.send(RideThreadMessage::ShowWindow).unwrap();
         }
 
     fn find(&mut self) {
-        self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
-
-        let input=dialog::Input::new("Enter the phrase to search for.").title("Find").show().unwrap();
-        if let Some(text)=input {
-            if text=="" {
+        if let Some(text)=self.input_box("Find", "Enter the phrase to search for.") {
+            if text.is_empty() {
                 return;
                 }
 
             self.lastly_searched_phrase=text.to_string();
-            };
-
-        self.ride_tx.send(RideThreadMessage::ShowWindow).unwrap();
+            }
 
         self.refind();
         }
@@ -327,8 +318,7 @@ impl<'a> RideScreen<'a> {
     fn copy(&mut self) {
         match self.content.get_selected_text(false) {
             Ok(text) => {
-                let mut ctx: X11ClipboardContext= X11ClipboardContext::new().unwrap();
-                ctx.set_contents(text).unwrap();
+                self.clipboard_set_text(&text);
                 self.speech.speak("Copied");
                 },
             Err(message) => {
@@ -340,8 +330,7 @@ impl<'a> RideScreen<'a> {
     fn cut(&mut self) {
         match self.content.get_selected_text(true) {
             Ok(text) => {
-                let mut ctx: X11ClipboardContext= X11ClipboardContext::new().unwrap();
-                ctx.set_contents(text).unwrap();
+                self.clipboard_set_text(&text);
                 self.speech.speak("Cutted");
                 },
             Err(message) => {
@@ -351,8 +340,7 @@ impl<'a> RideScreen<'a> {
         }
 
     fn paste(&mut self) {
-        let mut ctx: X11ClipboardContext= X11ClipboardContext::new().unwrap();
-        let text=ctx.get_contents().unwrap();
+        let text=self.clipboard_get_text();
         match self.content.paste(&text) {
             Ok(()) => {
                 self.speech.speak("Pasted");
@@ -364,66 +352,55 @@ impl<'a> RideScreen<'a> {
         }
 
     fn reformat(&mut self) {
-        self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
-        let beginning_mark=dialog::Input::new("Enter the mark beginning a block").title("Reformat").show().unwrap();
-
-        if let Some(beginning_mark)=beginning_mark {
+        if let Some(beginning_mark)=self.input_box("Reformat", "Enter the mark beginning a block") {
             let beginning_mark=beginning_mark.trim();
-            if beginning_mark!="" {
-                let ending_mark=dialog::Input::new("Enter the mark ending a block").title("Reformat").show().unwrap();
 
-                if let Some(ending_mark)=ending_mark {
-                    let ending_mark=ending_mark.trim();
-                    if ending_mark!="" {
+            if beginning_mark.is_empty() {
+                return;
+                }
 
-                        self.content.reformat(&beginning_mark, &ending_mark).unwrap();
+            if let Some(ending_mark)=self.input_box("Reformat", "Enter the mark ending a block") {
+                let ending_mark=ending_mark.trim();
 
-                        }
+                if ending_mark.is_empty() {
+                    return;
                     }
+
+                self.content.reformat(beginning_mark, ending_mark).unwrap();
                 }
             }
-
-        self.ride_tx.send(RideThreadMessage::ShowWindow).unwrap();
         }
 
     //Configuration functions
 
     fn add_character_definition(&mut self) {
-        self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
-        //std::thread::sleep(std::time::Duration::from_secs(1));
 
         let character=self.content.get_current_character();
-        let definition=dialog::Input::new(&format!("Enter the definition for the '{character}' character.")).title("Add character definition").show().unwrap();
 
-        if let Some(definition) = definition {
-            if definition == "" {
+        if let Some(definition)=self.input_box("Add character definition", &format!("Enter the definition for the '{character}' character.")) {
+            if definition.is_empty() {
                 return;
                 }
 
             self.settings.text_renderer.add_character_definition(character, &definition);
             }
 
-        self.ride_tx.send(RideThreadMessage::ShowWindow).unwrap();
         }
 
     fn add_string_definition(&mut self) {
-        self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
-        //std::thread::sleep(std::time::Duration::from_secs(1));
+        if let Some(string)=self.input_box("Add phrase definition", "Enter the desired phrase to be defined for string rendering.") {
+            if string.is_empty() {
+                return;
+                }
 
-        let string=dialog::Input::new("Enter the desired phrase to be defined for string rendering.").title("Add character definition").show().unwrap();
-        let definition=dialog::Input::new("Enter the definition for the entered phrase.").title("Add character definition").show().unwrap();
-
-        if let Some(string) = string {
-            if let Some(definition) = definition {
-                if string=="" || definition == "" {
+            if let Some(definition)=self.input_box("Add phrase definition", "Enter the definition for the entered phrase.") {
+                if definition.is_empty() {
                     return;
                     }
 
                 self.settings.text_renderer.add_string_definition(&string, &definition);
                 }
             }
-
-        self.ride_tx.send(RideThreadMessage::ShowWindow).unwrap();
         }
 
     }
@@ -434,7 +411,7 @@ impl<'a> RideScreen<'a> {
         if let Some(func) = self.keyboard_shortcuts_manager.get_function(key) {
             func(self);
             }
-        else if !key.control() {
+        else if !(key.control() ^ key.alt()) {
             if let Some(character) = key.keyval().to_unicode() {
                 if !character.is_control() {
                     self.on_text_entered(character);
@@ -469,16 +446,87 @@ impl<'a> RideScreen<'a> {
         }
 
     pub fn message_box(&self, title: &str, message: &str) {
-        self.ride_tx.send(RideThreadMessage::HideWindow).unwrap();
-        dialog::Message::new(message).title(title).show().unwrap();
-        self.ride_tx.send(RideThreadMessage::ShowWindow).unwrap();
+        let (title, message)=(title.to_string(), message.to_string());
+        let (message_box_sender, message_box_receiver)=std::sync::mpsc::channel::<()>();
 
-        /*
-        MessageDialog::new(None::<&Window>,
-        DialogFlags::empty(),
-        MessageType::Info,
-        ButtonsType::Ok, message).run();
-        */
+        glib::source::idle_add_once(move || {
+            let dialog = gtk::Dialog::new();
+            dialog.set_title(&title);
+
+            let label = gtk::Label::new(Some(&message));
+
+            dialog.content_area().add(&label);
+
+            dialog.add_button("Ok", gtk::ResponseType::Ok.into());
+
+            dialog.show_all();
+
+            dialog.run();
+
+            dialog.close();
+
+            message_box_sender.send(()).unwrap();
+            });
+
+        message_box_receiver.recv().unwrap();
+        }
+
+    pub fn input_box(&self, title: &str, message: &str) -> Option<String> {
+        let (title, message)=(title.to_string(), message.to_string());
+        let (input_box_sender, input_box_receiver)=std::sync::mpsc::channel::<Option<String>>();
+
+        glib::source::idle_add_once(move || {
+            let dialog = std::sync::Arc::new(gtk::Dialog::new());
+            dialog.set_title(&title);
+
+            let label = gtk::Label::new(Some(&message));
+            let entry = gtk::Entry::new();
+
+            dialog.content_area().add(&label);
+            dialog.content_area().add(&entry);
+
+            dialog.add_button("Ok", gtk::ResponseType::Ok.into());
+            dialog.add_button("Cancel", gtk::ResponseType::Cancel.into());
+
+            let dialog_clone=dialog.clone();
+            entry.connect_key_press_event(move |_, key| {
+                if key.keyval()==gdk::keys::constants::Return {
+                    dialog_clone.response(gtk::ResponseType::Ok);
+                    return Inhibit(true);
+                    }
+
+                Inhibit(false)
+                });
+
+            dialog.show_all();
+
+            let response=dialog.run();
+
+            let result=if response==gtk::ResponseType::Ok {
+                Some(entry.text().to_string())
+                }
+            else {
+                None
+                };
+
+            dialog.close();
+
+            input_box_sender.send(result).unwrap();
+            });
+
+        input_box_receiver.recv().unwrap()
+        }
+
+    pub fn clipboard_get_text(&mut self) -> String {
+        if let Ok(text)=self.clipboard_context.get_contents() {
+            return text;
+            }
+
+        String::new()
+        }
+
+    pub fn clipboard_set_text(&mut self, text: &str) {
+        self.clipboard_context.set_contents(text.to_string()).unwrap();
         }
 
     }
@@ -491,8 +539,6 @@ pub enum GtkThreadMessage {
 
 pub enum RideThreadMessage {
     SetWindowTitle(String),
-    HideWindow,
-    ShowWindow,
     }
 
 #[cfg(test)]
