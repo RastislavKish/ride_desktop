@@ -19,28 +19,26 @@ use std::rc::Rc;
 
 use derivative::Derivative;
 
-use super::RideScreen;
-
 pub mod keymap;
 pub use keymap::Key;
 
-pub struct KeyboardShortcutsManager<'a> {
-    keyboard_shortcuts: HashMap<KeyboardShortcut, Rc<&'a dyn Fn(&mut RideScreen<'a>)>>,
+pub struct KeyboardShortcutsManager<'a, T> {
+    keyboard_shortcuts: HashMap<KeyboardShortcut, Rc<&'a dyn Fn(&mut T)>>,
     }
 
-impl<'a> KeyboardShortcutsManager<'a> {
+impl<'a, T> KeyboardShortcutsManager<'a, T> {
 
-    pub fn new() -> KeyboardShortcutsManager<'a> {
-        let keyboard_shortcuts: HashMap<KeyboardShortcut, Rc<&'a dyn Fn(&mut RideScreen<'a>)>>=HashMap::new();
+    pub fn new() -> KeyboardShortcutsManager<'a, T> {
+        let keyboard_shortcuts: HashMap<KeyboardShortcut, Rc<&'a dyn Fn(&mut T)>>=HashMap::new();
 
         KeyboardShortcutsManager {keyboard_shortcuts}
         }
 
-    pub fn add_shortcut(&mut self, control: bool, shift: bool, alt: bool, key: Key, function: &'a dyn Fn(&mut RideScreen<'a>)) {
+    pub fn add_shortcut(&mut self, control: bool, shift: bool, alt: bool, key: Key, function: &'a dyn Fn(&mut T)) {
         self.keyboard_shortcuts.insert(KeyboardShortcut::new(control, shift, alt, key), Rc::new(function));
         }
 
-    pub fn get_function(&self, key: &KeyboardShortcut) -> Option<Rc<&'a dyn Fn(&mut RideScreen<'a>)>> {
+    pub fn get_function(&self, key: &KeyboardShortcut) -> Option<Rc<&'a dyn Fn(&mut T)>> {
         if let Some(rc) = self.keyboard_shortcuts.get(&key) {
             return Some(rc.clone());
             }

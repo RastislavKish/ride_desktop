@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2022 Rastislav Kish
+* Copyright (C) 2023 Rastislav Kish
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,39 +14,112 @@
 * along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
+use std::env;
+use std::path::Path;
+
+use bass::Sound;
+
+pub struct Resources {
+    pub bump: Sound,
+    pub chil: Sound,
+    pub capital: Sound,
+    }
+
+impl Resources {
+
+    pub fn new() -> Resources {
+
+        let mut bump=Sound::new();
+        let mut chil=Sound::new();
+        let mut capital=Sound::new();
+
+        let mut root=env::current_exe().unwrap();
+        root.pop();
+
+        let sounds_root=Path::join(&root, "Sounds");
+
+        bump.load(Path::join(&sounds_root, "Bump.wav").to_str().unwrap());
+        chil.load(Path::join(&sounds_root, "Chil.wav").to_str().unwrap());
+        capital.load(Path::join(&sounds_root, "Capital.wav").to_str().unwrap());
+
+        Resources {bump, chil, capital}
+        }
+    }
+
+use std::fs;
+use std::error::Error;
+
+use serde::{Serialize, Deserialize};
+
+use crate::core::TextRenderer;
+
+#[derive(Serialize, Deserialize)]
+enum Value {
+    Bool(bool),
+    TextRenderer(TextRenderer),
+    }
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Settings {
+    pub beep_on_capital_characters: bool,
+    pub text_renderer: TextRenderer,
+    }
+
+impl Settings {
+
+    pub fn new() -> Settings {
+        Settings {beep_on_capital_characters: true, text_renderer: TextRenderer::new()}
+        }
+
+    pub fn from_file(file_path: &str) -> Result<Settings, Box<dyn Error>> {
+        let settings: Settings=serde_yaml::from_str(&fs::read_to_string(&file_path)?)?;
+
+        Ok(settings)
+        }
+
+    pub fn save(&self, file_path: &str) {
+        let path=std::path::Path::new(file_path);
+        if !path.exists() {
+            let prefix=path.parent().unwrap();
+            fs::create_dir_all(prefix).unwrap();
+            }
+
+        fs::write(file_path, &serde_yaml::to_string(self).unwrap()).unwrap();
+        }
+
+    pub fn get_settings_file_path(project: &str, file_name: &str) -> String {
+        let config_dir=dirs::config_dir().unwrap();
+
+        Path::new(&config_dir).join(project).join(file_name).to_str().unwrap().to_string()
+        }
+
+    }
+
 use std::sync::mpsc::Sender;
 
 use copypasta::{ClipboardContext, ClipboardProvider};
 use gtk::prelude::*;
 use glib::Propagation;
 
-pub mod screen;
-
-mod ride_text;
-mod resources;
-mod settings;
-mod speech;
-
-use ride_text::{RideText, SearchDirection};
-use resources::Resources;
-use screen::{KeyboardShortcutsManager, KeyboardShortcut, Key};
-use settings::Settings;
-use speech::Speech;
+use crate::core::{RideText, SearchDirection};
+use crate::screen::{KeyboardShortcutsManager, KeyboardShortcut, Key};
+use crate::speech::Speech;
 
 pub struct RideScreen<'a> {
     clipboard_context: ClipboardContext,
     content: RideText,
     lastly_searched_phrase: String,
-    keyboard_shortcuts_manager: KeyboardShortcutsManager<'a>,
+    keyboard_shortcuts_manager: KeyboardShortcutsManager<'a, RideScreen<'a>>,
     resources: Resources,
     settings: Settings,
     speech: Speech,
-    ride_tx: Sender<RideThreadMessage>,
+    ride_sender: Sender<RideThreadMessage>,
     }
 
 impl<'a> RideScreen<'a> {
 
-    pub fn new(file_path: &str, ride_tx: Sender<RideThreadMessage>) -> Self {
+    pub fn new(file_path: &str, ride_sender: Sender<RideThreadMessage>) -> Self {
         let clipboard_context=ClipboardContext::new().unwrap();
 
         let resources=Resources::new();
@@ -99,7 +172,7 @@ impl<'a> RideScreen<'a> {
         keyboard_shortcuts_manager.add_shortcut(true, false, false, Key::R, &Self::add_character_definition);
         keyboard_shortcuts_manager.add_shortcut(true, true, false, Key::R, &Self::add_string_definition);
 
-        let mut result=Self {clipboard_context, content, lastly_searched_phrase, keyboard_shortcuts_manager, resources, settings, speech, ride_tx};
+        let mut result=Self {clipboard_context, content, lastly_searched_phrase, keyboard_shortcuts_manager, resources, settings, speech, ride_sender};
 
         result.load_from_file(file_path);
 
@@ -108,7 +181,7 @@ impl<'a> RideScreen<'a> {
 
     fn load_from_file(&mut self, file_path: &str) {
         if file_path=="" {
-            self.ride_tx.send(RideThreadMessage::SetWindowTitle("Untitled - Ride".to_string())).unwrap();
+            self.ride_sender.send(RideThreadMessage::SetWindowTitle("Untitled - Ride".to_string())).unwrap();
             return;
             }
         if let Err(message) = self.content.load_from_file(file_path) {
@@ -118,9 +191,9 @@ impl<'a> RideScreen<'a> {
         let file_path=self.content.file_path();
         if let Some(file_path)=file_path {
             let file_name=file_path.split("/").last().unwrap();
-            self.ride_tx.send(RideThreadMessage::SetWindowTitle(format!("{} - Ride", file_name))).unwrap();
+            self.ride_sender.send(RideThreadMessage::SetWindowTitle(format!("{} - Ride", file_name))).unwrap();
             } else {
-            self.ride_tx.send(RideThreadMessage::SetWindowTitle("Untitled - Ride".to_string())).unwrap();
+            self.ride_sender.send(RideThreadMessage::SetWindowTitle("Untitled - Ride".to_string())).unwrap();
             }
         }
 
@@ -542,6 +615,13 @@ pub enum RideThreadMessage {
     SetWindowTitle(String),
     }
 
+impl Default for Settings {
+
+    fn default() -> Self {
+        Settings::new()
+        }
+
+    }
 #[cfg(test)]
 mod tests {
     #[test]
