@@ -73,7 +73,7 @@ impl Settings {
         }
 
     pub fn from_file(file_path: &str) -> Result<Settings, Box<dyn Error>> {
-        let settings: Settings=serde_yaml::from_str(&fs::read_to_string(&file_path)?)?;
+        let settings: Settings=serde_yaml::from_str(&fs::read_to_string(file_path)?)?;
 
         Ok(settings)
         }
@@ -85,7 +85,7 @@ impl Settings {
             fs::create_dir_all(prefix).unwrap();
             }
 
-        fs::write(file_path, &serde_yaml::to_string(self).unwrap()).unwrap();
+        fs::write(file_path, serde_yaml::to_string(self).unwrap()).unwrap();
         }
 
     pub fn get_settings_file_path(project: &str, file_name: &str) -> String {
@@ -180,7 +180,7 @@ impl<'a> RideScreen<'a> {
         }
 
     fn load_from_file(&mut self, file_path: &str) {
-        if file_path=="" {
+        if file_path.is_empty() {
             self.ride_sender.send(RideThreadMessage::SetWindowTitle("Untitled - Ride".to_string())).unwrap();
             return;
             }
@@ -190,7 +190,7 @@ impl<'a> RideScreen<'a> {
 
         let file_path=self.content.file_path();
         if let Some(file_path)=file_path {
-            let file_name=file_path.split("/").last().unwrap();
+            let file_name=file_path.split('/').last().unwrap();
             self.ride_sender.send(RideThreadMessage::SetWindowTitle(format!("{} - Ride", file_name))).unwrap();
             } else {
             self.ride_sender.send(RideThreadMessage::SetWindowTitle("Untitled - Ride".to_string())).unwrap();
@@ -306,7 +306,7 @@ impl<'a> RideScreen<'a> {
         }
 
     fn refind(&mut self) {
-        if self.lastly_searched_phrase=="" {
+        if self.lastly_searched_phrase.is_empty() {
             self.find();
             }
 
@@ -325,7 +325,7 @@ impl<'a> RideScreen<'a> {
         }
 
     fn backward_refind(&mut self) {
-        if self.lastly_searched_phrase=="" {
+        if self.lastly_searched_phrase.is_empty() {
             self.find();
             }
 
@@ -531,7 +531,7 @@ impl<'a> RideScreen<'a> {
 
             dialog.content_area().add(&label);
 
-            dialog.add_button("Ok", gtk::ResponseType::Ok.into());
+            dialog.add_button("Ok", gtk::ResponseType::Ok);
 
             dialog.show_all();
 
@@ -550,7 +550,7 @@ impl<'a> RideScreen<'a> {
         let (input_box_sender, input_box_receiver)=std::sync::mpsc::channel::<Option<String>>();
 
         glib::source::idle_add_once(move || {
-            let dialog = std::sync::Arc::new(gtk::Dialog::new());
+            let dialog = std::rc::Rc::new(gtk::Dialog::new());
             dialog.set_title(&title);
 
             let label = gtk::Label::new(Some(&message));
@@ -559,8 +559,8 @@ impl<'a> RideScreen<'a> {
             dialog.content_area().add(&label);
             dialog.content_area().add(&entry);
 
-            dialog.add_button("Ok", gtk::ResponseType::Ok.into());
-            dialog.add_button("Cancel", gtk::ResponseType::Cancel.into());
+            dialog.add_button("Ok", gtk::ResponseType::Ok);
+            dialog.add_button("Cancel", gtk::ResponseType::Cancel);
 
             let dialog_clone=dialog.clone();
             entry.connect_key_press_event(move |_, key| {

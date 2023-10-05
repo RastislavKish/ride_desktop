@@ -48,7 +48,7 @@ impl RideText {
         {
         let mut lines: Vec<Line>=text.lines().map(|i| Line::new(0, i.chars().collect::<Vec<char>>())).collect();
 
-        if lines.len()==0 {
+        if lines.is_empty() {
             lines.push(Line::new(0, vec![]));
             }
 
@@ -99,7 +99,7 @@ impl RideText {
                     }
                 }
 
-            let line=prefix+&l.text.iter().collect::<String>().trim()+"\n";
+            let line=prefix+l.text.iter().collect::<String>().trim()+"\n";
             result+=&line;
             }
 
@@ -230,7 +230,7 @@ impl RideText {
         self.current_character_offset=0;
         self.current_indentation_level=self.lines[self.current_line_number].indentation_level;
 
-        return Ok(current_indentation_level!=self.current_indentation_level);
+        Ok(current_indentation_level!=self.current_indentation_level)
         }
 
     pub fn insert(&mut self, character: char)
@@ -287,7 +287,7 @@ impl RideText {
             self.lines[self.current_line_number].text.remove(self.current_character_offset-1);
             self.current_character_offset-=1;
 
-            return Some(result);
+            Some(result)
             }
         else {
             let original_line_number=self.current_line_number;
@@ -302,7 +302,7 @@ impl RideText {
             let mut original_line=self.lines.remove(original_line_number).text;
             self.lines[self.current_line_number].text.append(&mut original_line);
 
-            return Some('\n');
+            Some('\n')
             }
         }
     pub fn delete(&mut self)
@@ -312,7 +312,7 @@ impl RideText {
         self.navigate_to_previous_line();
         self.lines.drain(starting_line_number..finishing_line_number+1);
 
-        if self.lines.len()==0 {
+        if self.lines.is_empty() {
             self.lines.push(Line::new(0, vec!['\n']));
             }
         }
@@ -338,7 +338,7 @@ impl RideText {
             self.current_line_number=selection_beginning;
             self.navigate_to_previous_line();
             self.lines.drain(selection_beginning..selection_ending+1);
-            if self.lines.len()==0 {
+            if self.lines.is_empty() {
                 self.lines.push(Line::new(0, vec!['\n']));
                 }
             }
@@ -347,7 +347,7 @@ impl RideText {
         }
 
     pub fn paste(&mut self, text: &str) -> Result<(), String> {
-        let text=if !text.trim_end().contains("\n") {
+        let text=if !text.trim_end().contains('\n') {
             text.trim_start()
             }
         else {
@@ -355,14 +355,14 @@ impl RideText {
             };
         let chars: Vec<char>=text.chars().collect();
         if !text.contains('\n') {
-            for i in 0..chars.len() {
-                self.lines[self.current_line_number].text.insert(self.current_character_offset+i, chars[i]);
+            for (index, character) in chars.iter().enumerate() {
+                self.lines[self.current_line_number].text.insert(self.current_character_offset+index, *character);
                 }
             self.current_character_offset+=chars.len();
             return Ok(());
             }
 
-        let mut lines: Vec<Line>=text.replace("\r", "").split('\n').into_iter().map(|i| Line::new(0, i.chars().collect::<Vec<char>>())).collect();
+        let mut lines: Vec<Line>=text.replace('\r', "").split('\n').map(|i| Line::new(0, i.chars().collect())).collect();
         lines.iter_mut().for_each(|i| i.text.push('\n'));
         lines=RideText::parse_indentation(&lines)?;
 
@@ -381,20 +381,20 @@ impl RideText {
         }
 
     pub fn start_selection(&mut self) {
-        if self.selection_mark==None {
+        if self.selection_mark.is_none() {
             self.selection_mark=Some(self.current_line_number);
             }
         }
 
     pub fn cancel_selection(&mut self) {
-        if self.selection_mark!=None {
+        if self.selection_mark.is_some() {
             self.selection_mark=None;
             }
         }
     fn parse_indentation(lines: &Vec<Line>) -> Result<Vec<Line>, String>
         {
         let mut lines: Vec<Line>=Vec::clone(lines);
-        if lines.len()==0 {
+        if lines.is_empty() {
             return Ok(lines);
             }
 
@@ -416,7 +416,7 @@ impl RideText {
                 line.text.drain(0..current_indentation_level);
                 }
 
-            if (current_indentation_level==0 && line.text.len()==1) || comment_level>0 || line_text.trim().starts_with("//") || line_text.trim().starts_with("#") || line_text.trim().starts_with(";") || line_text.trim().starts_with("<<<<<<<") || line_text.trim().starts_with(">>>>>>>") || line_text.starts_with("=======") || line_text.trim().starts_with("/*") || line_text.trim().starts_with("\"\"\"") {
+            if (current_indentation_level==0 && line.text.len()==1) || comment_level>0 || line_text.trim().starts_with("//") || line_text.trim().starts_with('#') || line_text.trim().starts_with(';') || line_text.trim().starts_with("<<<<<<<") || line_text.trim().starts_with(">>>>>>>") || line_text.starts_with("=======") || line_text.trim().starts_with("/*") || line_text.trim().starts_with("\"\"\"") {
                 lines_adjustment_data[line_number]=true;
                 continue;
                 }
@@ -458,11 +458,11 @@ impl RideText {
         Ok(lines)
         }
 
-    fn get_indentation_level(line: &Vec<char>) -> usize
+    fn get_indentation_level(line: &[char]) -> usize
         {
-        for i in 0..line.len() {
-            if line[i]!=' ' && line[i]!='\t' {
-                return i;
+        for (index, character) in line.iter().enumerate() {
+            if *character!=' ' && *character!='\t' {
+                return index;
                 }
             }
 
@@ -491,7 +491,7 @@ impl RideText {
 
     fn search_on_line(&self, line_number: usize, starting_position: usize, search_term: &Vec<char>, search_direction: SearchDirection) -> Option<usize> {
 
-        if search_term.len()==0 || self.lines[line_number].text.len()==0 {
+        if search_term.is_empty() || self.lines[line_number].text.is_empty() {
             return None;
             }
 
@@ -536,7 +536,7 @@ impl RideText {
                         }
 
                     if match_streak==desired_match_streak {
-                        return Some((position-(match_streak-1)) as usize);
+                        return Some(position-(match_streak-1));
                         }
 
                     position+=1;
@@ -560,7 +560,7 @@ impl RideText {
                     }
 
                 for line_number in (0..self.current_line_number).rev() {
-                    let character_offset: usize=if self.lines[line_number].text.len()>0 {
+                    let character_offset: usize=if !self.lines[line_number].text.is_empty() {
                         self.lines[line_number].text.len()-1
                         }
                     else {
@@ -599,7 +599,7 @@ impl RideText {
         }
 
     pub fn reformat(&mut self, beginning_mark: &str, ending_mark: &str) -> Result<(), String> {
-        if beginning_mark=="" || ending_mark=="" {
+        if beginning_mark.is_empty() || ending_mark.is_empty() {
             return Err("Error: marks can't be empty".to_string());
             }
 
@@ -723,7 +723,7 @@ impl TextRenderer {
         }
 
     pub fn render_text(&self, text: &str) -> String {
-        if text=="" || text=="\n" {
+        if text.is_empty() || text=="\n" {
             return "blank".to_string();
             }
 
@@ -742,7 +742,7 @@ impl TextRenderer {
             }
 
         if self.characters_definitions.contains_key(&character) {
-            return Some((&self.characters_definitions[&character]).to_string());
+            return Some((self.characters_definitions[&character]).to_string());
             }
 
         None

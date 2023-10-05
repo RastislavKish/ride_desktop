@@ -16,7 +16,7 @@
 
 use std::env;
 use std::rc::Rc;
-use std::sync::{Arc, mpsc, mpsc::{Receiver, Sender}};
+use std::sync::{mpsc, mpsc::{Receiver, Sender}};
 use std::thread;
 use std::time::Duration;
 
@@ -57,7 +57,7 @@ fn main() {
 
 fn activate_window(app: &Application, gtk_sender: Sender<GtkThreadMessage>, gtk_receiver: Rc<Receiver<RideThreadMessage>>) {
 
-    let window=Arc::new(ApplicationWindow::new(app));
+    let window=Rc::new(ApplicationWindow::new(app));
     window.set_title("Ride");
     window.set_default_size(350, 70);
 
@@ -69,7 +69,7 @@ fn activate_window(app: &Application, gtk_sender: Sender<GtkThreadMessage>, gtk_
 
 fn launch_ride_thread(ride_sender: Sender<RideThreadMessage>, ride_receiver: Receiver<GtkThreadMessage>) -> thread::JoinHandle<()> {
     thread::spawn(move || {
-        let file_path=match env::args().skip(1).next() {
+        let file_path=match env::args().nth(1) {
             Some(path) => path,
             None => "".to_string(),
             };
@@ -97,15 +97,15 @@ fn connect_application_open_handler(application: &Application, gtk_sender: Sende
         });
     }
 
-fn connect_key_press_handler(window: Arc<ApplicationWindow>, gtk_sender: Sender<GtkThreadMessage>) {
+fn connect_key_press_handler(window: Rc<ApplicationWindow>, gtk_sender: Sender<GtkThreadMessage>) {
     window.connect_key_press_event(move |_, key| {
-        let keyboard_shortcut=KeyboardShortcut::from_eventkey(&key);
+        let keyboard_shortcut=KeyboardShortcut::from_eventkey(key);
         gtk_sender.send(GtkThreadMessage::KeyPress(keyboard_shortcut)).unwrap();
 
         Propagation::Proceed
         });
     }
-fn setup_timer(window: Arc<ApplicationWindow>, gtk_receiver: Rc<Receiver<RideThreadMessage>>) {
+fn setup_timer(window: Rc<ApplicationWindow>, gtk_receiver: Rc<Receiver<RideThreadMessage>>) {
     glib::source::timeout_add_local(Duration::from_millis(100), move || {
         if let Ok(message) = gtk_receiver.try_recv() {
             match message {

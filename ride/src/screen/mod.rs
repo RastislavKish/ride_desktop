@@ -22,14 +22,16 @@ use derivative::Derivative;
 pub mod keymap;
 pub use keymap::Key;
 
+type Binding<'a, T>=Rc<&'a dyn Fn(&mut T)>;
+
 pub struct KeyboardShortcutsManager<'a, T> {
-    keyboard_shortcuts: HashMap<KeyboardShortcut, Rc<&'a dyn Fn(&mut T)>>,
+    keyboard_shortcuts: HashMap<KeyboardShortcut, Binding<'a, T>>,
     }
 
 impl<'a, T> KeyboardShortcutsManager<'a, T> {
 
     pub fn new() -> KeyboardShortcutsManager<'a, T> {
-        let keyboard_shortcuts: HashMap<KeyboardShortcut, Rc<&'a dyn Fn(&mut T)>>=HashMap::new();
+        let keyboard_shortcuts: HashMap<KeyboardShortcut, Binding<'a, T>>=HashMap::new();
 
         KeyboardShortcutsManager {keyboard_shortcuts}
         }
@@ -38,8 +40,8 @@ impl<'a, T> KeyboardShortcutsManager<'a, T> {
         self.keyboard_shortcuts.insert(KeyboardShortcut::new(control, shift, alt, key), Rc::new(function));
         }
 
-    pub fn get_function(&self, key: &KeyboardShortcut) -> Option<Rc<&'a dyn Fn(&mut T)>> {
-        if let Some(rc) = self.keyboard_shortcuts.get(&key) {
+    pub fn get_function(&self, key: &KeyboardShortcut) -> Option<Binding<'a, T>> {
+        if let Some(rc) = self.keyboard_shortcuts.get(key) {
             return Some(rc.clone());
             }
 
