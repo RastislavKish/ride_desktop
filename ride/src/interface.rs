@@ -17,7 +17,7 @@
 use std::env;
 use std::path::Path;
 
-use bass::Sound;
+use crate::audio::Sound;
 
 pub struct Resources {
     pub bump: Sound,

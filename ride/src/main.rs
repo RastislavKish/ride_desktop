@@ -28,6 +28,7 @@ use glib::{ControlFlow, Propagation};
 use gio::ApplicationFlags;
 
 mod core;
+mod audio;
 mod screen;
 mod speech;
 mod interface;
@@ -36,8 +37,6 @@ use interface::{RideScreen, GtkThreadMessage, RideThreadMessage};
 use screen::KeyboardShortcut;
 
 fn main() {
-    bass::Sound::init();
-
     let (gtk_sender, ride_receiver) = mpsc::channel::<GtkThreadMessage>();
     let (ride_sender, gtk_receiver) = mpsc::channel::<RideThreadMessage>();
     let gtk_receiver=Rc::new(gtk_receiver);

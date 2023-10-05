@@ -9,11 +9,10 @@ edition = "2018"
 
 [dependencies]
 
-bass={path="../bass"}
-
 copypasta="0.8.2"
 derivative="2.2.0"
 dirs="4.0.0"
+kira="0.8.5"
 lazy_static="1.4.0"
 
 regex="1.9.6"
