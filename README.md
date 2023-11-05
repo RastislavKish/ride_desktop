@@ -136,3 +136,40 @@ It's not possible to copy a part of a line (like one word) in Ride. However, the
 
 ## Installation
 
+### From source
+
+#### Dependencies
+
+* [Rust programming language](https://www.rust-lang.org/tools/install)
+* The [Bass audio library,](https://un4seen.com) make sure to use the version appropriate for your architecture, 64-bit in most cases
+* GTK 3 development files, on Linux, use your package manager i.e.
+    ```sudo apt install libgtk-3-dev```
+    On Windows, you can use [gvsbuild.](https://github.com/wingtk/gvsbuild) Make sure to setup the GTK environment variables in your system configuration to make everything available for the Rust compiler.
+* On Linux, you need libspeechd-dev and clang to provide speech.
+    ```sudo apt install clang libspeechd-dev```
+
+#### Build
+
+```
+git clone https://github.com/RastislavKish/ride_for_linux
+cd ride_for_linux
+git switch development
+cd ride
+# on Linux, copy the x64/libbass.so library from the downloaded archive to /usr/local/lib, on Windows, copy x64/bass.dll and c/x64/bass.lib to the current working directory.
+cargo build --release -q
+# Add the sound files
+cp -r Sounds target/release
+# Launch the program
+cargo run --release -q
+```
+
+#### Windows version doesn't speak many characters. What's going on?
+
+When you first launch Ride on Windows, you likely notice that lot of elementary characters in character by character navigation, like space, semicolon, hyphen, are not spoken. The reason is that Ride uses your screenreader for speaking aloud individual characters, however, screenreaders only provide functions for reading texts, that obviously ignore the detail you expect in the character mode.
+
+Ride comes up with its own text rendering, specifically, you can define how should a currently focused character be spoken (pressing Ctrl+R), or you can also use phrase -> phrase replacements for line by line navigation (Ctrl+Shift+R).
+
+In the future, presets should be shipped with the program to make this task easier. They're difficult to produce at this moment, since every configuration needs to be specific for a particular language and particular synthesiser.
+
+The Linux version doesn't need any adjustions unless the users want to make them, since the program uses the character API of speech dispatcher.
+
