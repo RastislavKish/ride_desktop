@@ -1,86 +1,118 @@
+/*
+* Copyright (C) 2022 Rastislav Kish
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, version 3.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 use std::env;
 use std::rc::Rc;
-use std::sync::{Arc, mpsc};
+use std::sync::{mpsc, mpsc::{Receiver, Sender}};
 use std::thread;
+use std::time::Duration;
 
 use gtk::prelude::*;
-use gio::prelude::*;
 
 use gtk::{Application, ApplicationWindow};
+use glib::{ControlFlow, Propagation};
 
-mod ride_screen;
+use gio::ApplicationFlags;
 
-use ride_screen::{RideScreen, GtkThreadMessage, RideThreadMessage};
-use ride_screen::screen::KeyboardShortcut;
+mod core;
+mod screen;
+mod speech;
+mod interface;
+
+use interface::{RideScreen, GtkThreadMessage, RideThreadMessage};
+use screen::KeyboardShortcut;
 
 fn main() {
-bass::Sound::init();
+    bass::Sound::init();
 
-let (gtk_tx, ride_rx) = mpsc::channel::<GtkThreadMessage>();
-let (ride_tx, gtk_rx) = mpsc::channel::<RideThreadMessage>();
-let gtk_rx=Rc::new(gtk_rx);
+    let (gtk_sender, ride_receiver) = mpsc::channel::<GtkThreadMessage>();
+    let (ride_sender, gtk_receiver) = mpsc::channel::<RideThreadMessage>();
+    let gtk_receiver=Rc::new(gtk_receiver);
 
-let handle=thread::spawn(move || {
-let file_path=match env::args().skip(1).next() {
-Some(path) => path,
-None => "".to_string(),
-};
+    let handle=launch_ride_thread(ride_sender, ride_receiver);
 
-let mut ride_screen=RideScreen::new(&file_path, ride_tx);
+    let application=Application::new(None, ApplicationFlags::HANDLES_OPEN);
 
-for received in ride_rx {
-match received {
-GtkThreadMessage::KeyPress(key) => ride_screen.on_key_pressed(&key),
-GtkThreadMessage::ApplicationExit => break,
-};
-}
+    connect_application_activate_handler(&application, gtk_sender.clone(), gtk_receiver.clone());
+    connect_application_open_handler(&application, gtk_sender.clone(), gtk_receiver.clone());
 
-ride_screen.on_exit();
-});
+    application.run();
 
-let application=Application::new(None, Default::default())
-.expect("Failed to initialize gtk application.");
+    gtk_sender.send(GtkThreadMessage::ApplicationExit).unwrap();
+    handle.join().unwrap();
+    }
 
-let tx_application=gtk_tx.clone();
-application.connect_activate(move |app| {
-let tx_key_press_event=tx_application.clone();
+fn activate_window(app: &Application, gtk_sender: Sender<GtkThreadMessage>, gtk_receiver: Rc<Receiver<RideThreadMessage>>) {
 
-let window=Arc::new(ApplicationWindow::new(app));
-window.set_title("Ride");
-window.set_default_size(350, 70);
+    let window=Rc::new(ApplicationWindow::new(app));
+    window.set_title("Ride");
+    window.set_default_size(350, 70);
 
-window.connect_key_press_event(move |_, key| {
+    connect_key_press_handler(window.clone(), gtk_sender);
+    setup_timer(window.clone(), gtk_receiver);
 
-let keyboard_shortcut=KeyboardShortcut::from_eventkey(&key);
-tx_key_press_event.send(GtkThreadMessage::KeyPress(keyboard_shortcut)).unwrap();
+    window.show_all();
+    }
 
-Inhibit(false)
-});
+fn launch_ride_thread(ride_sender: Sender<RideThreadMessage>, ride_receiver: Receiver<GtkThreadMessage>) -> thread::JoinHandle<()> {
+    thread::spawn(move || {
+        let file_path=match env::args().nth(1) {
+            Some(path) => path,
+            None => "".to_string(),
+            };
 
-let window_timer=window.clone();
-let test_rx=gtk_rx.clone();
-gtk::timeout_add(100, move || {
+        let mut ride_screen=RideScreen::new(&file_path, ride_sender);
 
-if let Ok(message) = test_rx.try_recv() {
-match message {
-RideThreadMessage::SetWindowTitle(title) => window_timer.set_title(&title),
-RideThreadMessage::HideWindow => window_timer.hide(),
-RideThreadMessage::ShowWindow => window_timer.show(),
-};
-}
+        for received in ride_receiver {
+            match received {
+                GtkThreadMessage::KeyPress(key) => ride_screen.on_key_pressed(&key),
+                GtkThreadMessage::ApplicationExit => break,
+                };
+            }
 
-Continue(true)
-});
+        ride_screen.on_exit();
+        })
+    }
+fn connect_application_activate_handler(application: &Application, gtk_sender: Sender<GtkThreadMessage>, gtk_receiver: Rc<Receiver<RideThreadMessage>>) {
+    application.connect_activate(move |app| {
+        activate_window(app, gtk_sender.clone(), gtk_receiver.clone());
+        });
+    }
+fn connect_application_open_handler(application: &Application, gtk_sender: Sender<GtkThreadMessage>, gtk_receiver: Rc<Receiver<RideThreadMessage>>) {
+    application.connect_open(move |app, _, _| {
+        activate_window(app, gtk_sender.clone(), gtk_receiver.clone());
+        });
+    }
 
-//ride_screen.set_window(window.clone());
+fn connect_key_press_handler(window: Rc<ApplicationWindow>, gtk_sender: Sender<GtkThreadMessage>) {
+    window.connect_key_press_event(move |_, key| {
+        let keyboard_shortcut=KeyboardShortcut::from_eventkey(key);
+        gtk_sender.send(GtkThreadMessage::KeyPress(keyboard_shortcut)).unwrap();
 
+        Propagation::Proceed
+        });
+    }
+fn setup_timer(window: Rc<ApplicationWindow>, gtk_receiver: Rc<Receiver<RideThreadMessage>>) {
+    glib::source::timeout_add_local(Duration::from_millis(100), move || {
+        if let Ok(message) = gtk_receiver.try_recv() {
+            match message {
+                RideThreadMessage::SetWindowTitle(title) => window.set_title(&title),
+                };
+            }
 
-window.show_all();
-});
-
-application.run(&[]);
-
-gtk_tx.send(GtkThreadMessage::ApplicationExit).unwrap();
-handle.join().unwrap();
-}
-
+        ControlFlow::Continue
+        });
+    }

@@ -10,21 +10,26 @@ edition = "2018"
 [dependencies]
 
 bass={path="../bass"}
-gdk="0.12.1"
 
-clipboard="0.5.0"
-derivative="2.1.1"
-dialog="0.3.0"
+copypasta="0.8.2"
+derivative="2.2.0"
+dirs="4.0.0"
 lazy_static="1.4.0"
-serde={version="1.0.110", features=["derive"]}
-rmp-serde="0.14.3"
-speech-dispatcher="0.4.3"
 
-[dependencies.gtk]
-version = "0.8.1"
-features = ["v3_16"]
+regex="1.9.6"
+serde={version="1.0.140", features=["derive"]}
+serde_yaml="0.9.14"
 
-[dependencies.gio]
-version = ""
-features = ["v2_44"]
+gtk="0.18.1"
+gdk="0.18.0"
+gio="0.18.2"
+glib="0.18.2"
+
+[target.'cfg(unix)'.dependencies]
+
+speech-dispatcher="0.16.0"
+
+[target.'cfg(windows)'.dependencies]
+
+tolk="0.5.0"
 

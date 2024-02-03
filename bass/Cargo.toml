@@ -1,6 +1,6 @@
 [package]
 name = "bass"
-license="LGPL-3.0-only"
+license="LGPL-2.1-only"
 version = "0.1.0"
 authors = ["Rastislav Kish <rastislav.kish@protonmail.com>"]
 edition = "2018"
