@@ -1,4 +1,4 @@
-# ride_for_linux
+# Ride desktop
 
 For blind people, indentation in code is usually something that's just getting in way, and can even break the code if messed up, in languages like Python.
 
@@ -151,8 +151,8 @@ It's not possible to copy a part of a line (like one word) in Ride. However, the
 #### Build
 
 ```
-git clone https://github.com/RastislavKish/ride_for_linux
-cd ride_for_linux
+git clone https://github.com/RastislavKish/ride_desktop
+cd ride_desktop
 git switch development
 cd ride
 # on Linux, copy the x64/libbass.so library from the downloaded archive to /usr/local/lib, on Windows, copy x64/bass.dll and c/x64/bass.lib to the current working directory.
